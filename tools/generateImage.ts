@@ -8,7 +8,7 @@ import {v4 as uuid} from "uuid";
 import {z} from "zod";
 import ImageGenerationService from "../ImageGenerationService.ts";
 
-const name = "image/generate";
+const name = "image_generate";
 
 async function execute(
   {prompt, aspectRatio = "square", outputDirectory, model, keywords}: z.infer<typeof inputSchema>,

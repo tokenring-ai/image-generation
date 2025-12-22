@@ -4,7 +4,7 @@ import FileSystemService from "@tokenring-ai/filesystem/FileSystemService";
 import {z} from "zod";
 import ImageGenerationService from "../ImageGenerationService.ts";
 
-const name = "image/search";
+const name = "image_search";
 
 function similarity(a: string, b: string): number {
   const aLower = a.toLowerCase();
