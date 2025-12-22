@@ -1,0 +1,31 @@
+{
+  "name": "@tokenring-ai/image-generation",
+  "version": "0.2.0",
+  "description": "Image generation with configurable output directories",
+  "dependencies": {
+    "@tokenring-ai/agent": "0.2.0",
+    "@tokenring-ai/ai-client": "0.2.0",
+    "@tokenring-ai/app": "0.2.0",
+    "@tokenring-ai/chat": "0.2.0",
+    "@tokenring-ai/filesystem": "0.2.0",
+    "exiftool-vendored": "^28.8.0",
+    "uuid": "^13.0.0",
+    "zod": "catalog:"
+  },
+  "exports": {
+    ".": "./index.ts",
+    "./*": "./*.ts"
+  },
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "vitest": "catalog:",
+    "typescript": "catalog:"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "build": "tsc --noEmit",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  }
+}
