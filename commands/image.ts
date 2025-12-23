@@ -1,34 +1,30 @@
 import Agent from "@tokenring-ai/agent/Agent";
 import {TokenRingAgentCommand} from "@tokenring-ai/agent/types";
+import createSubcommandRouter from "@tokenring-ai/agent/util/subcommandRouter";
 import ImageGenerationService from "../ImageGenerationService.ts";
 
 const description = "/image [action] - Manage image generation";
 
 const help = `# /image - Manage image generation
 
-## /image reindex [directory]
+## /image reindex
 
-Regenerate the image_index.json file for a directory by scanning all images and reading their metadata.
-
-If no directory is specified, will prompt to select from configured output directories.
+Regenerate the image_index.json file in the image directory by scanning all images and reading their metadata.
 
 ### Examples
 
-/image reindex ./images
 /image reindex
 `;
 
-async function execute(remainder: string, agent: Agent): Promise<void> {
+const execute = createSubcommandRouter({
+  reindex
+})
+
+async function reindex(remainder: string, agent: Agent): Promise<void> {
   const imageService = agent.requireServiceByType(ImageGenerationService);
-  const [action, ...args] = remainder.split(/\s+/);
+  const directory = imageService.getOutputDirectory();
 
-  if (action === "reindex") {
-    const directory = imageService.getOutputDirectory();
-
-    await imageService.reindex(directory, agent);
-  } else {
-    agent.infoLine(help);
-  }
+  await imageService.reindex(directory, agent);
 }
 
 export default {

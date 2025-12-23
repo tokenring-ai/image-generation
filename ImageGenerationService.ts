@@ -17,8 +17,6 @@ export default class ImageGenerationService implements TokenRingService {
     this.model = config.model
   }
 
-  async attach(agent: Agent): Promise<void> {}
-
   getOutputDirectory(): string {
     return this.outputDirectory;
   }
