@@ -29,7 +29,7 @@ export default class ImageGenerationService implements TokenRingService {
     const fileSystem = agent.requireServiceByType(FileSystemService);
     const indexPath = `${directory}/image_index.json`;
     const entry = JSON.stringify({filename, mimeType, width, height, keywords}) + "\n";
-    await fileSystem.appendFile(indexPath, entry);
+    await fileSystem.appendFile(indexPath, entry, agent);
   }
 
   async reindex(directory: string, agent: Agent): Promise<void> {
@@ -38,7 +38,7 @@ export default class ImageGenerationService implements TokenRingService {
     
     agent.infoLine(`Reindexing images in ${directory}...`);
     
-    const files = await fileSystem.glob(`${directory}/*.{jpg,jpeg,png,webp}`);
+    const files = await fileSystem.glob(`${directory}/*.{jpg,jpeg,png,webp}`, {}, agent);
     const entries: string[] = [];
     
     for (const file of files) {
@@ -58,7 +58,7 @@ export default class ImageGenerationService implements TokenRingService {
       }
     }
     
-    await fileSystem.writeFile(indexPath, entries.join("\n") + "\n");
+    await fileSystem.writeFile(indexPath, entries.join("\n") + "\n", agent);
     agent.infoLine(`Reindexed ${entries.length} images`);
   }
 }

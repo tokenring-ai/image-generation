@@ -44,7 +44,7 @@ async function execute(
   const imageBuffer = Buffer.from(imageResult.uint8Array);
   const filePath = `${targetDir}/${filename}`;
 
-  await fileSystem.writeFile(filePath, imageBuffer);
+  await fileSystem.writeFile(filePath, imageBuffer, agent);
   
   const exifData: any = {};
   if (keywords && keywords.length > 0) {
