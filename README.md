@@ -10,10 +10,11 @@ Image generation service with configurable output directories, EXIF metadata sup
 - **Automatic Indexing**: Maintain an index of generated images with metadata
 - **Directory Management**: Configurable output directories for image storage
 - **Aspect Ratio Support**: Generate images in square, tall, or wide formats
+- **Model Flexibility**: Support for multiple AI image generation models
 
 ## Configuration
 
-```javascript
+```typescript
 export default {
   imageGeneration: {
     outputDirectory: "./images/generated",
@@ -153,16 +154,6 @@ pkg/image-generation/
 └── README.md                   # Package documentation
 ```
 
-### Testing
-
-Run tests with Vitest:
-
-```bash
-bun run test
-bun run test:watch
-bun run test:coverage
-```
-
 ### Configuration Schema
 
 ```typescript
@@ -172,6 +163,16 @@ export const ImageGenerationConfigSchema = z.object({
   outputDirectory: z.string(),
   model: z.string(),
 });
+```
+
+### Testing
+
+Run tests with Vitest:
+
+```bash
+bun run test
+bun run test:watch
+bun run test:coverage
 ```
 
 ## Error Handling
