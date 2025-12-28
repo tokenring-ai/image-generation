@@ -26,7 +26,7 @@ async function execute(
 
   agent.infoLine(`[${name}] Generating image: "${prompt}"`);
 
-  const imageClient = await imageModelRegistry.getFirstOnlineClient(imageService.getModel());
+  const imageClient = await imageModelRegistry.getClient(imageService.getModel());
 
   let size: `${number}x${number}`;
   let width: number, height: number;
