@@ -17,7 +17,6 @@ export default {
   version: packageJSON.version,
   description: packageJSON.description,
   install(app, config) {
-    // const config = app.getConfigSlice('imageGeneration', ImageGenerationConfigSchema.optional());
     if (config.imageGeneration) {
       app.addServices(new ImageGenerationService(config.imageGeneration));
       app.waitForService(ChatService, chatService =>
