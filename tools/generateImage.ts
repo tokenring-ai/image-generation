@@ -1,6 +1,6 @@
 import Agent from "@tokenring-ai/agent/Agent";
 import {ImageGenerationModelRegistry} from "@tokenring-ai/ai-client/ModelRegistry";
-import {TokenRingToolDefinition} from "@tokenring-ai/chat/types";
+import {TokenRingToolDefinition} from "@tokenring-ai/chat/schema";
 import FileSystemService from "@tokenring-ai/filesystem/FileSystemService";
 import {exiftool} from "exiftool-vendored";
 import {Buffer} from "node:buffer";
