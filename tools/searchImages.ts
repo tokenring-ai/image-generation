@@ -29,7 +29,7 @@ async function execute(
   const targetDir = imageService.getOutputDirectory();
 
   const indexPath = `${targetDir}/image_index.json`;
-  const indexContent = await fileSystem.getFile(indexPath, agent);
+  const indexContent = await fileSystem.readTextFile(indexPath, agent);
   
   if (!indexContent) {
     throw new Error(`No index found at ${indexPath}. Run /image reindex first.`);
