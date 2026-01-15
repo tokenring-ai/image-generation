@@ -48,14 +48,14 @@ async function execute(
         results.push({...entry, score});
       }
     } catch (error) {
-      agent.warningLine(`Failed to parse index line: ${line}`);
+      agent.warningMessage(`Failed to parse index line: ${line}`);
     }
   }
 
   results.sort((a, b) => b.score - a.score);
   const topResults = results.slice(0, limit);
 
-  agent.infoLine(`[${name}] Found ${results.length} matches, returning top ${topResults.length}`);
+  agent.infoMessage(`[${name}] Found ${results.length} matches, returning top ${topResults.length}`);
 
   return {
     success: true,

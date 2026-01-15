@@ -36,7 +36,7 @@ export default class ImageGenerationService implements TokenRingService {
     const fileSystem = agent.requireServiceByType(FileSystemService);
     const indexPath = `${directory}/image_index.json`;
     
-    agent.infoLine(`Reindexing images in ${directory}...`);
+    agent.infoMessage(`Reindexing images in ${directory}...`);
     
     const files = await fileSystem.glob(`${directory}/*.{jpg,jpeg,png,webp}`, {}, agent);
     const entries: string[] = [];
@@ -54,11 +54,11 @@ export default class ImageGenerationService implements TokenRingService {
         });
         entries.push(entry);
       } catch (error) {
-        agent.warningLine(`Failed to read metadata for ${file}: ${error}`);
+        agent.warningMessage(`Failed to read metadata for ${file}: ${error}`);
       }
     }
     
     await fileSystem.writeFile(indexPath, entries.join("\n") + "\n", agent);
-    agent.infoLine(`Reindexed ${entries.length} images`);
+    agent.infoMessage(`Reindexed ${entries.length} images`);
   }
 }

@@ -24,7 +24,7 @@ async function execute(
 
   const targetDir = imageService.getOutputDirectory();
 
-  agent.infoLine(`[${name}] Generating image: "${prompt}"`);
+  agent.infoMessage(`[${name}] Generating image: "${prompt}"`);
 
   const imageClient = await imageModelRegistry.getClient(imageService.getModel());
 
@@ -54,14 +54,14 @@ async function execute(
   
   try {
     await exiftool.write(filePath, exifData);
-    agent.infoLine(`[${name}] Added metadata to EXIF data`);
+    agent.infoMessage(`[${name}] Added metadata to EXIF data`);
   } catch (error) {
-    agent.warningLine(`[${name}] Failed to write EXIF data: ${error}`);
+    agent.warningMessage(`[${name}] Failed to write EXIF data: ${error}`);
   }
   
   await imageService.addToIndex(targetDir, filename, imageResult.mediaType, width, height, keywords || [], agent);
   
-  agent.infoLine(`[${name}] Image saved: ${filePath}`);
+  agent.infoMessage(`[${name}] Image saved: ${filePath}`);
 
   return {
     success: true,
