@@ -9,6 +9,7 @@ import {z} from "zod";
 import ImageGenerationService from "../ImageGenerationService.ts";
 
 const name = "image_generate";
+const displayName = "ImageGeneration/generateImage";
 
 async function execute(
   {prompt, aspectRatio = "square", outputDirectory, model, keywords}: z.infer<typeof inputSchema>,
@@ -81,5 +82,5 @@ const inputSchema = z.object({
 });
 
 export default {
-  name, description, inputSchema, execute,
+  name, displayName, description, inputSchema, execute,
 } satisfies TokenRingToolDefinition<typeof inputSchema>;

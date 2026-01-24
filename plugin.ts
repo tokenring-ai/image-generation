@@ -20,7 +20,7 @@ export default {
     if (config.imageGeneration) {
       app.addServices(new ImageGenerationService(config.imageGeneration));
       app.waitForService(ChatService, chatService =>
-        chatService.addTools(packageJSON.name, tools)
+        chatService.addTools(tools)
       );
       app.waitForService(AgentCommandService, agentCommandService =>
         agentCommandService.addAgentCommands(chatCommands)

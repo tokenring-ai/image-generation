@@ -5,6 +5,7 @@ import {z} from "zod";
 import ImageGenerationService from "../ImageGenerationService.ts";
 
 const name = "image_search";
+const displayName = "ImageGeneration/searchImages";
 
 function similarity(a: string, b: string): number {
   const aLower = a.toLowerCase();
@@ -80,5 +81,5 @@ const inputSchema = z.object({
 });
 
 export default {
-  name, description, inputSchema, execute,
+  name, displayName, description, inputSchema, execute,
 } satisfies TokenRingToolDefinition<typeof inputSchema>;
