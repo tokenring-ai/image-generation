@@ -1,6 +1,6 @@
 import Agent from "@tokenring-ai/agent/Agent";
 import {ImageGenerationModelRegistry} from "@tokenring-ai/ai-client/ModelRegistry";
-import {TokenRingToolDefinition} from "@tokenring-ai/chat/schema";
+import {TokenRingToolDefinition, type TokenRingToolJSONResult} from "@tokenring-ai/chat/schema";
 import FileSystemService from "@tokenring-ai/filesystem/FileSystemService";
 import {exiftool} from "exiftool-vendored";
 import {Buffer} from "node:buffer";
@@ -12,9 +12,9 @@ const name = "image_generate";
 const displayName = "ImageGeneration/generateImage";
 
 async function execute(
-  {prompt, aspectRatio = "square", outputDirectory, model, keywords}: z.infer<typeof inputSchema>,
+  {prompt, aspectRatio = "square", outputDirectory, model, keywords}: z.output<typeof inputSchema>,
   agent: Agent,
-) {
+): Promise<TokenRingToolJSONResult<{path: string}>> {
   const imageService = agent.requireServiceByType(ImageGenerationService);
   const fileSystem = agent.requireServiceByType(FileSystemService);
   const imageModelRegistry = agent.requireServiceByType(ImageGenerationModelRegistry);
@@ -65,9 +65,8 @@ async function execute(
   agent.infoMessage(`[${name}] Image saved: ${filePath}`);
 
   return {
-    success: true,
-    path: filePath,
-    message: `Image generated and saved to ${filePath}`,
+    type: "json",
+    data: {path: filePath}
   };
 }
 
