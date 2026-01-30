@@ -10,7 +10,7 @@
     "@tokenring-ai/filesystem": "0.2.0",
     "exiftool-vendored": "^35.5.0",
     "uuid": "^13.0.0",
-    "zod": "catalog:"
+    "zod": "^4.3.6"
   },
   "exports": {
     ".": "./index.ts",
@@ -19,8 +19,8 @@
   "license": "MIT",
   "type": "module",
   "devDependencies": {
-    "vitest": "catalog:",
-    "typescript": "catalog:"
+    "vitest": "^4.0.18",
+    "typescript": "^5.9.3"
   },
   "scripts": {
     "test": "vitest run",
