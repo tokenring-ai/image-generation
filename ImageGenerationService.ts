@@ -9,20 +9,15 @@ export default class ImageGenerationService implements TokenRingService {
   name = "ImageGenerationService";
   description = "Image generation with configurable output directories";
 
-  outputDirectory: string;
-  model: string;
-
-  constructor(config: z.infer<typeof ImageGenerationConfigSchema>) {
-    this.outputDirectory = config.outputDirectory;
-    this.model = config.model
+  constructor(private options: z.infer<typeof ImageGenerationConfigSchema>) {
   }
 
   getOutputDirectory(): string {
-    return this.outputDirectory;
+    return this.options.outputDirectory;
   }
 
   getModel(): string {
-    return this.model;
+    return this.options.model;
   }
 
   async addToIndex(directory: string, filename: string, mimeType: string, width: number, height: number, keywords: string[], agent: Agent): Promise<void> {
