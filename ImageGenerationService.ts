@@ -6,7 +6,7 @@ import {z} from "zod";
 import {ImageGenerationConfigSchema} from "./index.ts";
 
 export default class ImageGenerationService implements TokenRingService {
-  name = "ImageGenerationService";
+  readonly name = "ImageGenerationService";
   description = "Image generation with configurable output directories";
 
   constructor(private options: z.infer<typeof ImageGenerationConfigSchema>) {
