@@ -20,11 +20,12 @@ const execute = createSubcommandRouter({
   reindex
 })
 
-async function reindex(remainder: string, agent: Agent): Promise<void> {
+async function reindex(remainder: string, agent: Agent): Promise<string> {
   const imageService = agent.requireServiceByType(ImageGenerationService);
   const directory = imageService.getOutputDirectory();
 
   await imageService.reindex(directory, agent);
+  return "Image index reindexed successfully.";
 }
 
 export default {
