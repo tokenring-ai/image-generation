@@ -29,6 +29,7 @@ async function reindex(remainder: string, agent: Agent): Promise<string> {
 }
 
 export default {
+  name: "image",
   description,
   execute,
   help,
