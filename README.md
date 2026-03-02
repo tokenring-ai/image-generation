@@ -1,6 +1,6 @@
 # @tokenring-ai/image-generation
 
-Image generation service with configurable output directories, EXIF metadata support, and local image search capabilities.
+AI-powered image generation service with configurable output directories, EXIF metadata support, and local image search capabilities.
 
 ## Overview
 
@@ -66,6 +66,89 @@ The image generation service integrates with the agent system and provides the f
 outputDirectory: string;  // Base directory for storing generated images
 model: string;            // Default AI model for image generation
 ```
+
+## Core Components
+
+### ImageGenerationService
+
+Main service managing image generation and indexing functionality.
+
+**Service Name:** `ImageGenerationService`
+
+**Description:** Image generation with configurable output directories
+
+**Constructor:**
+```typescript
+constructor(config: {
+  outputDirectory: string,
+  model: string
+})
+```
+
+**Methods:**
+
+#### getOutputDirectory()
+
+Get the configured output directory for generated images.
+
+```typescript
+getOutputDirectory(): string
+```
+
+**Returns:** The configured output directory path
+
+#### getModel()
+
+Get the configured image generation model.
+
+```typescript
+getModel(): string
+```
+
+**Returns:** The configured image generation model name
+
+#### addToIndex()
+
+Add an image entry to the index with EXIF metadata.
+
+```typescript
+async addToIndex(
+  directory: string,
+  filename: string,
+  mimeType: string,
+  width: number,
+  height: number,
+  keywords: string[],
+  agent: Agent
+): Promise<void>
+```
+
+**Parameters:**
+- `directory`: Output directory path
+- `filename`: Image filename
+- `mimeType`: Image MIME type
+- `width`: Image width in pixels
+- `height`: Image height in pixels
+- `keywords`: Array of keywords to add to metadata
+- `agent`: Agent instance for file operations
+
+#### reindex()
+
+Regenerate the image index from existing files in the output directory by scanning all images and reading their metadata.
+
+```typescript
+async reindex(directory: string, agent: Agent): Promise<void>
+```
+
+**Parameters:**
+- `directory`: Output directory path
+- `agent`: Agent instance for file operations
+
+**Behavior:**
+- Scans directory for image files (jpg, jpeg, png, webp)
+- Reads EXIF metadata from each file
+- Updates image_index.json with metadata entries
+- Logs progress and errors
 
 ## Tools
 
@@ -218,89 +301,6 @@ Reindexing images in ./images/generated...
 Reindexed 15 images
 ```
 
-## Services
-
-### ImageGenerationService
-
-Main service managing image generation and indexing functionality.
-
-**Service Name:** `ImageGenerationService`
-
-**Description:** Image generation with configurable output directories
-
-**Constructor:**
-```typescript
-constructor(config: {
-  outputDirectory: string,
-  model: string
-})
-```
-
-**Methods:**
-
-#### getOutputDirectory()
-
-Get the configured output directory for generated images.
-
-```typescript
-getOutputDirectory(): string
-```
-
-**Returns:** The configured output directory path
-
-#### getModel()
-
-Get the configured image generation model.
-
-```typescript
-getModel(): string
-```
-
-**Returns:** The configured image generation model name
-
-#### addToIndex()
-
-Add an image entry to the index with EXIF metadata.
-
-```typescript
-async addToIndex(
-  directory: string,
-  filename: string,
-  mimeType: string,
-  width: number,
-  height: number,
-  keywords: string[],
-  agent: Agent
-): Promise<void>
-```
-
-**Parameters:**
-- `directory`: Output directory path
-- `filename`: Image filename
-- `mimeType`: Image MIME type
-- `width`: Image width in pixels
-- `height`: Image height in pixels
-- `keywords`: Array of keywords to add to metadata
-- `agent`: Agent instance for file operations
-
-#### reindex()
-
-Regenerate the image index from existing files in the output directory by scanning all images and reading their metadata.
-
-```typescript
-async reindex(directory: string, agent: Agent): Promise<void>
-```
-
-**Parameters:**
-- `directory`: Output directory path
-- `agent`: Agent instance for file operations
-
-**Behavior:**
-- Scans directory for image files (jpg, jpeg, png, webp)
-- Reads EXIF metadata from each file
-- Updates image_index.json with metadata entries
-- Logs progress and errors
-
 ## Usage Examples
 
 ### Basic Image Generation
@@ -364,7 +364,7 @@ pkg/image-generation/
 ├── plugin.ts                    # Plugin integration logic and configuration schema
 ├── ImageGenerationService.ts    # Core service implementation
 ├── tools.ts                     # Tool exports
-├── chatCommands.ts              # Chat command definitions
+├── commands.ts                  # Chat command exports
 ├── commands/
 │   └── image.ts                 # /image command implementation
 ├── tools/
@@ -460,12 +460,12 @@ The image generation package integrates with the Token Ring ecosystem through:
 
 ### Production Dependencies
 
-- `@tokenring-ai/agent` (^0.2.0) - Agent orchestration system
-- `@tokenring-ai/app` (^0.2.0) - Application framework
-- `@tokenring-ai/chat` (^0.2.0) - Chat service integration
-- `@tokenring-ai/filesystem` (^0.2.0) - File system operations
-- `@tokenring-ai/ai-client` (^0.2.0) - AI client and model registry
-- `exiftool-vendored` (^35.9.0) - EXIF metadata processing
+- `@tokenring-ai/agent` (0.2.0) - Agent orchestration system
+- `@tokenring-ai/ai-client` (0.2.0) - AI client and model registry
+- `@tokenring-ai/app` (0.2.0) - Application framework
+- `@tokenring-ai/chat` (0.2.0) - Chat service integration
+- `@tokenring-ai/filesystem` (0.2.0) - File system operations
+- `exiftool-vendored` (^35.12.1) - EXIF metadata processing
 - `uuid` (^13.0.0) - Unique ID generation
 - `zod` (^4.3.6) - Schema validation
 
