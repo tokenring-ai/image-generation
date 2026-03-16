@@ -4,7 +4,7 @@ import ImageGenerationService from "../ImageGenerationService.ts";
 
 export default {
   name: "image reindex",
-  description: "/image reindex - Reindex the image directory",
+  description: "Reindex the image directory",
   help: `# /image reindex
 
 Regenerate the image_index.json file by scanning all images in the image directory and reading their metadata.
