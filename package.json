@@ -8,7 +8,7 @@
     "@tokenring-ai/app": "0.2.0",
     "@tokenring-ai/chat": "0.2.0",
     "@tokenring-ai/filesystem": "0.2.0",
-    "exiftool-vendored": "^35.13.1",
+    "exiftool-vendored": "^35.15.1",
     "uuid": "^13.0.0",
     "zod": "^4.3.6"
   },
@@ -19,8 +19,8 @@
   "license": "MIT",
   "type": "module",
   "devDependencies": {
-    "vitest": "^4.1.0",
-    "typescript": "^5.9.3"
+    "vitest": "^4.1.1",
+    "typescript": "^6.0.2"
   },
   "scripts": {
     "test": "vitest run",

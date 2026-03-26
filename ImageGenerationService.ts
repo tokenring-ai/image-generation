@@ -54,6 +54,6 @@ export default class ImageGenerationService implements TokenRingService {
     }
     
     await fileSystem.writeFile(indexPath, entries.join("\n") + "\n", agent);
-    agent.infoMessage(`Reindexed ${entries.length} images`);
+    agent.infoMessage(`Reindexed ${entries.length} images.`);
   }
 }

@@ -5,7 +5,7 @@ import {z} from "zod";
 import agentCommands from "./commands.ts";
 import ImageGenerationService from "./ImageGenerationService.ts";
 import {ImageGenerationConfigSchema} from "./index.ts";
-import packageJSON from './package.json' with {type: 'json'};
+import packageJSON from "./package.json" with {type: "json"};
 import tools from "./tools.ts";
 
 const packageConfigSchema = z.object({
