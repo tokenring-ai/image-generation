@@ -1,10 +1,5 @@
 import Agent from "@tokenring-ai/agent/Agent";
-import {ImageGenerationModelRegistry} from "@tokenring-ai/ai-client/ModelRegistry";
 import {TokenRingToolDefinition, type TokenRingToolJSONResult} from "@tokenring-ai/chat/schema";
-import FileSystemService from "@tokenring-ai/filesystem/FileSystemService";
-import {exiftool} from "exiftool-vendored";
-import {Buffer} from "node:buffer";
-import {v4 as uuid} from "uuid";
 import {z} from "zod";
 import ImageGenerationService from "../ImageGenerationService.ts";
 
@@ -12,61 +7,18 @@ const name = "image_generate";
 const displayName = "ImageGeneration/generateImage";
 
 async function execute(
-  {prompt, aspectRatio = "square", outputDirectory, model, keywords}: z.output<typeof inputSchema>,
+  args: z.output<typeof inputSchema>,
   agent: Agent,
 ): Promise<TokenRingToolJSONResult<{path: string}>> {
   const imageService = agent.requireServiceByType(ImageGenerationService);
-  const fileSystem = agent.requireServiceByType(FileSystemService);
-  const imageModelRegistry = agent.requireServiceByType(ImageGenerationModelRegistry);
 
-  if (!prompt) {
-    throw new Error("Prompt is required");
-  }
-
-  const targetDir = imageService.getOutputDirectory(agent);
-
-  agent.infoMessage(`[${name}] Generating image: "${prompt}"`);
-
-  const imageClient = await imageModelRegistry.getClient(imageService.requireModel(agent));
-
-  let size: `${number}x${number}`;
-  let width: number, height: number;
-  switch (aspectRatio) {
-    case "square": size = "1024x1024"; width = 1024; height = 1024; break;
-    case "tall": size = "1024x1536"; width = 1024; height = 1536; break;
-    case "wide": size = "1536x1024"; width = 1536; height = 1024; break;
-    default: size = "1024x1024"; width = 1024; height = 1024;
-  }
-
-  const [imageResult] = await imageClient.generateImage({prompt, size, n: 1}, agent);
-
-  const extension = imageResult.mediaType.split("/")[1];
-  const filename = `${uuid()}.${extension}`;
-  const imageBuffer = Buffer.from(imageResult.uint8Array);
-  const filePath = `${targetDir}/${filename}`;
-
-  await fileSystem.writeFile(filePath, imageBuffer, agent);
-  
-  const exifData: any = {};
-  if (keywords && keywords.length > 0) {
-    exifData.Keywords = keywords;
-  }
-  exifData.ImageDescription = prompt;
-  
-  try {
-    await exiftool.write(filePath, exifData);
-    agent.infoMessage(`[${name}] Added metadata to EXIF data`);
-  } catch (error) {
-    agent.warningMessage(`[${name}] Failed to write EXIF data: ${error}`);
-  }
-  
-  await imageService.addToIndex(targetDir, filename, imageResult.mediaType, width, height, keywords || [], agent);
-  
-  agent.infoMessage(`[${name}] Image saved: ${filePath}`);
+  const result = await imageService.generateImage(args, agent);
 
   return {
     type: "json",
-    data: {path: filePath}
+    data: {
+      path: result.filePath
+    }
   };
 }
 
@@ -74,9 +26,7 @@ const description = "Generate an AI image and save it to a configured output dir
 
 const inputSchema = z.object({
   prompt: z.string().describe("Description of the image to generate"),
-  aspectRatio: z.enum(["square", "tall", "wide"]).default("square").optional(),
-  outputDirectory: z.string().describe("Output directory (will prompt if not provided)").optional(),
-  model: z.string().describe("Image generation model to use").optional(),
+  aspectRatio: z.enum(["square", "tall", "wide"]).default("square"),
   keywords: z.array(z.string()).describe("Keywords to add to image EXIF/IPTC metadata").optional(),
 });
 

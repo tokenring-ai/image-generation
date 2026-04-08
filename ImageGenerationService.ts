@@ -5,9 +5,17 @@ import TokenRingApp from "@tokenring-ai/app";
 import {TokenRingService} from "@tokenring-ai/app/types";
 import FileSystemService from "@tokenring-ai/filesystem/FileSystemService";
 import deepMerge from "@tokenring-ai/utility/object/deepMerge";
+import {generateHumanId} from "@tokenring-ai/utility/string/generateHumanId";
 import {exiftool} from "exiftool-vendored";
+import {Buffer} from "node:buffer";
 import {ImageGenerationAgentConfigSchema, type ParsedImageGenerationConfig} from "./schema.ts";
 import {ImageGenerationState} from "./state/ImageGenerationState.ts";
+
+export type GenerateImageOptions = {
+  prompt: string;
+  aspectRatio: "square" | "tall" | "wide";
+  keywords?: string[];
+}
 
 export default class ImageGenerationService implements TokenRingService {
   readonly name = "ImageGenerationService";
@@ -61,7 +69,9 @@ export default class ImageGenerationService implements TokenRingService {
   }
 
   setModel(model: string, agent: Agent): void {
-    agent.mutateState(ImageGenerationState, (state) => { state.model = model; });
+    agent.mutateState(ImageGenerationState, (state) => {
+      state.model = model;
+    });
   }
 
   requireModel(agent: Agent): string {
@@ -82,12 +92,12 @@ export default class ImageGenerationService implements TokenRingService {
 
     const fileSystem = agent.requireServiceByType(FileSystemService);
     const indexPath = `${directory}/image_index.json`;
-    
+
     agent.infoMessage(`Reindexing images in ${directory}...`);
-    
+
     const files = await fileSystem.glob(`${directory}/*.{jpg,jpeg,png,webp}`, {}, agent);
     const entries: string[] = [];
-    
+
     for (const file of files) {
       try {
         const metadata = await exiftool.read(file);
@@ -104,8 +114,85 @@ export default class ImageGenerationService implements TokenRingService {
         agent.warningMessage(`Failed to read metadata for ${file}: ${error}`);
       }
     }
-    
+
     await fileSystem.writeFile(indexPath, entries.join("\n") + "\n", agent);
     agent.infoMessage(`Reindexed ${entries.length} images.`);
+  }
+
+  async generateImage(
+    {prompt, aspectRatio = "square", keywords}: GenerateImageOptions,
+    agent: Agent,
+  ): Promise<{ mediaType: string, fileName: string, filePath: string, buffer: Buffer }> {
+    const fileSystem = agent.requireServiceByType(FileSystemService);
+    const imageModelRegistry = agent.requireServiceByType(ImageGenerationModelRegistry);
+
+    if (!prompt) {
+      throw new Error("Prompt is required");
+    }
+
+    const model = this.requireModel(agent);
+
+    const targetDir = this.getOutputDirectory(agent);
+
+    agent.infoMessage(`[${this.name}] Generating image: "${prompt}"`);
+
+    const imageClient = await imageModelRegistry.getClient(model);
+
+    let size: `${number}x${number}`;
+    let width: number, height: number;
+    switch (aspectRatio) {
+      case "square":
+        size = "1024x1024";
+        width = 1024;
+        height = 1024;
+        break;
+      case "tall":
+        size = "1024x1536";
+        width = 1024;
+        height = 1536;
+        break;
+      case "wide":
+        size = "1536x1024";
+        width = 1536;
+        height = 1024;
+        break;
+      default:
+        size = "1024x1024";
+        width = 1024;
+        height = 1024;
+    }
+
+    const [imageResult] = await imageClient.generateImage({prompt, size, n: 1}, agent);
+
+    const extension = imageResult.mediaType.split("/")[1];
+    const fileName = `${generateHumanId()}.${extension}`;
+    const imageBuffer = Buffer.from(imageResult.uint8Array);
+    const filePath = `${targetDir}/${fileName}`;
+
+    await fileSystem.writeFile(filePath, imageBuffer, agent);
+
+    const exifData: any = {};
+    if (keywords && keywords.length > 0) {
+      exifData.Keywords = keywords;
+    }
+    exifData.ImageDescription = prompt;
+
+    try {
+      await exiftool.write(filePath, exifData);
+      agent.infoMessage(`[${this.name}] Added metadata to EXIF data`);
+    } catch (error) {
+      agent.warningMessage(`[${this.name}] Failed to write EXIF data: ${error}`);
+    }
+
+    await this.addToIndex(targetDir, fileName, imageResult.mediaType, width, height, keywords || [], agent);
+
+    agent.infoMessage(`[${this.name}] Image saved: ${filePath}`);
+
+    return {
+      mediaType: imageResult.mediaType,
+      buffer: imageBuffer,
+      fileName,
+      filePath
+    };
   }
 }
