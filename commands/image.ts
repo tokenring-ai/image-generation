@@ -5,7 +5,7 @@ const inputSchema = {} as const satisfies AgentCommandInputSchema;
 
 async function execute({agent}: AgentCommandInputType<typeof inputSchema>): Promise<string> {
   const imageService = agent.requireServiceByType(ImageGenerationService);
-  await imageService.reindex(imageService.getOutputDirectory(), agent);
+  await imageService.reindex(agent);
   return "Image index re-indexed successfully.";
 }
 

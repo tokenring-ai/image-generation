@@ -1,0 +1,31 @@
+import {CommandFailedError} from "@tokenring-ai/agent/AgentError";
+import {AgentCommandInputSchema, AgentCommandInputType, TokenRingAgentCommand} from "@tokenring-ai/agent/types";
+import ImageGenerationService from "../../../ImageGenerationService.ts";
+
+const inputSchema = {
+  args: {},
+  positionals: [{
+    name: "modelName",
+    description: "The image model name to set",
+    required: true,
+  }]
+} as const satisfies AgentCommandInputSchema;
+
+async function execute({positionals, agent}: AgentCommandInputType<typeof inputSchema>): Promise<string> {
+  const modelName = positionals.modelName;
+  if (!modelName) throw new CommandFailedError("Model name required. Usage: /image model set <model_name>");
+  agent.requireServiceByType(ImageGenerationService).setModel(modelName, agent);
+  return `Image model set to ${modelName}`;
+}
+
+export default {
+  name: "image model set",
+  description: "Set the image generation model",
+  inputSchema,
+  execute,
+  help: `Set the image generation model to a specific model by name.
+
+## Example
+
+/image model set openai:dall-e-3`,
+} satisfies TokenRingAgentCommand<typeof inputSchema>;

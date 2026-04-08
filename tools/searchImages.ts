@@ -27,7 +27,7 @@ async function execute(
   const imageService = agent.requireServiceByType(ImageGenerationService);
   const fileSystem = agent.requireServiceByType(FileSystemService);
 
-  const targetDir = imageService.getOutputDirectory();
+  const targetDir = imageService.getOutputDirectory(agent);
 
   const indexPath = `${targetDir}/image_index.json`;
   const indexContent = await fileSystem.readTextFile(indexPath, agent);

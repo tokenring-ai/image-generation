@@ -23,11 +23,11 @@ async function execute(
     throw new Error("Prompt is required");
   }
 
-  const targetDir = imageService.getOutputDirectory();
+  const targetDir = imageService.getOutputDirectory(agent);
 
   agent.infoMessage(`[${name}] Generating image: "${prompt}"`);
 
-  const imageClient = await imageModelRegistry.getClient(imageService.getModel());
+  const imageClient = await imageModelRegistry.getClient(imageService.requireModel(agent));
 
   let size: `${number}x${number}`;
   let width: number, height: number;
