@@ -1,10 +1,10 @@
 import {AgentManager} from "@tokenring-ai/agent";
 import {ImageGenerationModelRegistry} from "@tokenring-ai/ai-client/ModelRegistry";
-import TokenRingApp from "@tokenring-ai/app";
+import type TokenRingApp from "@tokenring-ai/app";
 import {createRPCEndpoint} from "@tokenring-ai/rpc/createRPCEndpoint";
 import {exiftool} from "exiftool-vendored";
-import fs from "node:fs/promises";
 import {Buffer} from "node:buffer";
+import fs from "node:fs/promises";
 import {v4 as uuid} from "uuid";
 import ImageGenerationService from "../ImageGenerationService.ts";
 import ImageGenerationRpcSchema from "./schema.ts";
@@ -25,15 +25,22 @@ export default createRPCEndpoint(ImageGenerationRpcSchema, {
     let images = content
       .trim()
       .split("\n")
-      .filter(l => l.trim())
-      .map(line => { try { return JSON.parse(line); } catch { return null; } })
+      .filter((l) => l.trim())
+      .map((line) => {
+        try {
+          return JSON.parse(line);
+        } catch {
+          return null;
+        }
+      })
       .filter(Boolean);
 
     if (args.search) {
       const q = args.search.toLowerCase();
-      images = images.filter((img: any) =>
-        img.keywords?.some((k: string) => k.toLowerCase().includes(q)) ||
-        img.filename?.toLowerCase().includes(q)
+      images = images.filter(
+        (img: any) =>
+          img.keywords?.some((k: string) => k.toLowerCase().includes(q)) ||
+          img.filename?.toLowerCase().includes(q),
       );
     }
 
@@ -52,7 +59,10 @@ export default createRPCEndpoint(ImageGenerationRpcSchema, {
     const imageService = app.requireService(ImageGenerationService);
     const imageModelRegistry = app.requireService(ImageGenerationModelRegistry);
 
-    const modelName = args.model ?? imageService.getModel(agent) ?? imageService.getDefaultModel();
+    const modelName =
+      args.model ??
+      imageService.getModel(agent) ??
+      imageService.getDefaultModel();
     if (!modelName) throw new Error("No image model is configured");
 
     const imageClient = await imageModelRegistry.getClient(modelName);
@@ -60,12 +70,27 @@ export default createRPCEndpoint(ImageGenerationRpcSchema, {
     let size: `${number}x${number}`;
     let width: number, height: number;
     switch (args.aspectRatio ?? "square") {
-      case "tall": size = "1024x1536"; width = 1024; height = 1536; break;
-      case "wide": size = "1536x1024"; width = 1536; height = 1024; break;
-      default:     size = "1024x1024"; width = 1024; height = 1024; break;
+      case "tall":
+        size = "1024x1536";
+        width = 1024;
+        height = 1536;
+        break;
+      case "wide":
+        size = "1536x1024";
+        width = 1536;
+        height = 1024;
+        break;
+      default:
+        size = "1024x1024";
+        width = 1024;
+        height = 1024;
+        break;
     }
 
-    const [imageResult] = await imageClient.generateImage({prompt: args.prompt, size, n: 1}, agent);
+    const [imageResult] = await imageClient.generateImage(
+      {prompt: args.prompt, size, n: 1},
+      agent,
+    );
 
     const extension = imageResult.mediaType.split("/")[1] || "jpg";
     const filename = `${uuid()}.${extension}`;
@@ -85,15 +110,22 @@ export default createRPCEndpoint(ImageGenerationRpcSchema, {
     }
 
     const indexPath = `${outputDir}/image_index.json`;
-    const entry = JSON.stringify({
-      filename,
-      mimeType: imageResult.mediaType,
-      width,
-      height,
-      keywords: args.keywords ?? [],
-    }) + "\n";
+    const entry =
+      JSON.stringify({
+        filename,
+        mimeType: imageResult.mediaType,
+        width,
+        height,
+        keywords: args.keywords ?? [],
+      }) + "\n";
     await fs.appendFile(indexPath, entry);
 
-    return {filename, width, height, mimeType: imageResult.mediaType, message: `Generated: ${filename}`};
+    return {
+      filename,
+      width,
+      height,
+      mimeType: imageResult.mediaType,
+      message: `Generated: ${filename}`,
+    };
   },
 });

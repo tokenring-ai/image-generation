@@ -1,21 +1,21 @@
-import Agent from "@tokenring-ai/agent/Agent";
+import type Agent from "@tokenring-ai/agent/Agent";
 import type {AgentCreationContext} from "@tokenring-ai/agent/types";
 import {ImageGenerationModelRegistry} from "@tokenring-ai/ai-client/ModelRegistry";
-import TokenRingApp from "@tokenring-ai/app";
-import {TokenRingService} from "@tokenring-ai/app/types";
+import type TokenRingApp from "@tokenring-ai/app";
+import type {TokenRingService} from "@tokenring-ai/app/types";
 import FileSystemService from "@tokenring-ai/filesystem/FileSystemService";
 import deepMerge from "@tokenring-ai/utility/object/deepMerge";
 import {generateHumanId} from "@tokenring-ai/utility/string/generateHumanId";
 import {exiftool} from "exiftool-vendored";
 import {Buffer} from "node:buffer";
-import {ImageGenerationAgentConfigSchema, type ParsedImageGenerationConfig} from "./schema.ts";
+import {ImageGenerationAgentConfigSchema, type ParsedImageGenerationConfig,} from "./schema.ts";
 import {ImageGenerationState} from "./state/ImageGenerationState.ts";
 
 export type GenerateImageOptions = {
   prompt: string;
   aspectRatio: "square" | "tall" | "wide";
   keywords?: string[];
-}
+};
 
 export default class ImageGenerationService implements TokenRingService {
   readonly name = "ImageGenerationService";
@@ -23,14 +23,21 @@ export default class ImageGenerationService implements TokenRingService {
 
   defaultModel: string | null = null;
 
-  constructor(private app: TokenRingApp, private options: ParsedImageGenerationConfig) {
+  constructor(
+    private app: TokenRingApp,
+    private options: ParsedImageGenerationConfig,
+  ) {
   }
 
   start() {
-    const imageModelRegistry = this.app.requireService(ImageGenerationModelRegistry);
+    const imageModelRegistry = this.app.requireService(
+      ImageGenerationModelRegistry,
+    );
 
     for (const modelName of this.options.defaultModels) {
-      const foundModels = Object.keys(imageModelRegistry.getModelSpecsByRequirements(modelName));
+      const foundModels = Object.keys(
+        imageModelRegistry.getModelSpecsByRequirements(modelName),
+      );
       if (foundModels.length > 0) {
         this.defaultModel = foundModels[0];
         break;
@@ -38,18 +45,35 @@ export default class ImageGenerationService implements TokenRingService {
     }
 
     if (this.defaultModel) {
-      this.app.serviceOutput(this, `Selected ${this.defaultModel} as default image generation model`);
+      this.app.serviceOutput(
+        this,
+        `Selected ${this.defaultModel} as default image generation model`,
+      );
     } else {
-      this.app.serviceError(this, `No default image generation model was configured`);
+      this.app.serviceError(
+        this,
+        `No default image generation model was configured`,
+      );
     }
   }
 
   attach(agent: Agent, creationContext: AgentCreationContext): void {
-    const agentConfig = deepMerge(this.options.agentDefaults, agent.getAgentConfigSlice('imageGeneration', ImageGenerationAgentConfigSchema));
-    const initialState = agent.initializeState(ImageGenerationState, agentConfig);
+    const agentConfig = deepMerge(
+      this.options.agentDefaults,
+      agent.getAgentConfigSlice(
+        "imageGeneration",
+        ImageGenerationAgentConfigSchema,
+      ),
+    );
+    const initialState = agent.initializeState(
+      ImageGenerationState,
+      agentConfig,
+    );
 
     const selectedModel = initialState.model ?? this.defaultModel;
-    creationContext.items.push(`Image Generation Model: ${selectedModel ?? "No model selected"}`);
+    creationContext.items.push(
+      `Image Generation Model: ${selectedModel ?? "No model selected"}`,
+    );
   }
 
   getDefaultOutputDirectory(): string {
@@ -76,14 +100,24 @@ export default class ImageGenerationService implements TokenRingService {
 
   requireModel(agent: Agent): string {
     const model = this.getModel(agent);
-    if (!model) throw new Error("No image generation model is currently selected");
+    if (!model)
+      throw new Error("No image generation model is currently selected");
     return model;
   }
 
-  async addToIndex(directory: string, filename: string, mimeType: string, width: number, height: number, keywords: string[], agent: Agent): Promise<void> {
+  async addToIndex(
+    directory: string,
+    filename: string,
+    mimeType: string,
+    width: number,
+    height: number,
+    keywords: string[],
+    agent: Agent,
+  ): Promise<void> {
     const fileSystem = agent.requireServiceByType(FileSystemService);
     const indexPath = `${directory}/image_index.json`;
-    const entry = JSON.stringify({filename, mimeType, width, height, keywords}) + "\n";
+    const entry =
+      JSON.stringify({filename, mimeType, width, height, keywords}) + "\n";
     await fileSystem.appendFile(indexPath, entry, agent);
   }
 
@@ -95,19 +129,23 @@ export default class ImageGenerationService implements TokenRingService {
 
     agent.infoMessage(`Reindexing images in ${directory}...`);
 
-    const files = await fileSystem.glob(`${directory}/*.{jpg,jpeg,png,webp}`, {}, agent);
+    const files = await fileSystem.glob(
+      `${directory}/*.{jpg,jpeg,png,webp}`,
+      {},
+      agent,
+    );
     const entries: string[] = [];
 
     for (const file of files) {
       try {
         const metadata = await exiftool.read(file);
-        const filename = file.split('/').pop()!;
+        const filename = file.split("/").pop();
         const entry = JSON.stringify({
           filename,
-          mimeType: metadata.MIMEType || 'image/jpeg',
+          mimeType: metadata.MIMEType || "image/jpeg",
           width: metadata.ImageWidth || 0,
           height: metadata.ImageHeight || 0,
-          keywords: metadata.Keywords || []
+          keywords: metadata.Keywords || [],
         });
         entries.push(entry);
       } catch (error) {
@@ -122,9 +160,16 @@ export default class ImageGenerationService implements TokenRingService {
   async generateImage(
     {prompt, aspectRatio = "square", keywords}: GenerateImageOptions,
     agent: Agent,
-  ): Promise<{ mediaType: string, fileName: string, filePath: string, buffer: Buffer }> {
+  ): Promise<{
+    mediaType: string;
+    fileName: string;
+    filePath: string;
+    buffer: Buffer;
+  }> {
     const fileSystem = agent.requireServiceByType(FileSystemService);
-    const imageModelRegistry = agent.requireServiceByType(ImageGenerationModelRegistry);
+    const imageModelRegistry = agent.requireServiceByType(
+      ImageGenerationModelRegistry,
+    );
 
     if (!prompt) {
       throw new Error("Prompt is required");
@@ -162,7 +207,10 @@ export default class ImageGenerationService implements TokenRingService {
         height = 1024;
     }
 
-    const [imageResult] = await imageClient.generateImage({prompt, size, n: 1}, agent);
+    const [imageResult] = await imageClient.generateImage(
+      {prompt, size, n: 1},
+      agent,
+    );
 
     const extension = imageResult.mediaType.split("/")[1];
     const fileName = `${generateHumanId()}.${extension}`;
@@ -181,10 +229,20 @@ export default class ImageGenerationService implements TokenRingService {
       await exiftool.write(filePath, exifData);
       agent.infoMessage(`[${this.name}] Added metadata to EXIF data`);
     } catch (error) {
-      agent.warningMessage(`[${this.name}] Failed to write EXIF data: ${error}`);
+      agent.warningMessage(
+        `[${this.name}] Failed to write EXIF data: ${error}`,
+      );
     }
 
-    await this.addToIndex(targetDir, fileName, imageResult.mediaType, width, height, keywords || [], agent);
+    await this.addToIndex(
+      targetDir,
+      fileName,
+      imageResult.mediaType,
+      width,
+      height,
+      keywords || [],
+      agent,
+    );
 
     agent.infoMessage(`[${this.name}] Image saved: ${filePath}`);
 
@@ -192,7 +250,7 @@ export default class ImageGenerationService implements TokenRingService {
       mediaType: imageResult.mediaType,
       buffer: imageBuffer,
       fileName,
-      filePath
+      filePath,
     };
   }
 }

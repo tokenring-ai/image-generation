@@ -4,4 +4,10 @@ import imageModelReset from "./commands/image/model/reset.ts";
 import imageModelSelect from "./commands/image/model/select.ts";
 import imageModelSet from "./commands/image/model/set.ts";
 
-export default [image, imageModelGet, imageModelSet, imageModelSelect, imageModelReset];
+export default [
+  image,
+  imageModelGet,
+  imageModelSet,
+  imageModelSelect,
+  imageModelReset,
+];

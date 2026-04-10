@@ -7,11 +7,15 @@ const serializationSchema = z.object({
   outputDirectory: z.string(),
 });
 
-export class ImageGenerationState extends AgentStateSlice<typeof serializationSchema> {
+export class ImageGenerationState extends AgentStateSlice<
+  typeof serializationSchema
+> {
   model: string | null;
   outputDirectory: string;
 
-  constructor(readonly initialConfig: ParsedImageGenerationConfig["agentDefaults"]) {
+  constructor(
+    readonly initialConfig: ParsedImageGenerationConfig["agentDefaults"],
+  ) {
     super("ImageGenerationState", serializationSchema);
     this.model = initialConfig.model ?? null;
     this.outputDirectory = initialConfig.outputDirectory;
@@ -26,10 +30,8 @@ export class ImageGenerationState extends AgentStateSlice<typeof serializationSc
     this.outputDirectory = data.outputDirectory;
   }
 
-  show(): string[] {
-    return [
-      `Image Model: ${this.model ?? "(none)"}`,
-      `Output Directory: ${this.outputDirectory}`,
-    ];
+  show(): string {
+    return `Image Model: ${this.model ?? "(none)"}
+Output Directory: ${this.outputDirectory}`;
   }
 }

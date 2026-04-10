@@ -1,5 +1,5 @@
 import {AgentCommandService} from "@tokenring-ai/agent";
-import {TokenRingPlugin} from "@tokenring-ai/app";
+import type {TokenRingPlugin} from "@tokenring-ai/app";
 import {ChatService} from "@tokenring-ai/chat";
 import {RpcService} from "@tokenring-ai/rpc";
 import {WebHostService} from "@tokenring-ai/web-host";
@@ -13,7 +13,7 @@ import {ImageGenerationServiceConfigSchema} from "./schema.ts";
 import tools from "./tools.ts";
 
 const packageConfigSchema = z.object({
-  imageGeneration: ImageGenerationServiceConfigSchema
+  imageGeneration: ImageGenerationServiceConfigSchema,
 });
 
 export default {
@@ -23,23 +23,24 @@ export default {
   description: packageJSON.description,
   install(app, config) {
     app.addServices(new ImageGenerationService(app, config.imageGeneration));
-    app.waitForService(ChatService, chatService =>
-      chatService.addTools(tools)
+    app.waitForService(ChatService, (chatService) =>
+      chatService.addTools(tools),
     );
-    app.waitForService(AgentCommandService, agentCommandService =>
-      agentCommandService.addAgentCommands(agentCommands)
+    app.waitForService(AgentCommandService, (agentCommandService) =>
+      agentCommandService.addAgentCommands(agentCommands),
     );
-    app.waitForService(RpcService, rpcService => {
+    app.waitForService(RpcService, (rpcService) => {
       rpcService.registerEndpoint(imageGenerationRPC);
     });
     const outputDir = config.imageGeneration.agentDefaults.outputDirectory;
-    app.waitForService(WebHostService, webHostService => {
+    app.waitForService(WebHostService, (webHostService) => {
       webHostService.registerResource("Image Media Files", {
-        async register(router: BunRouter) {
+        register(router: BunRouter) {
           router.static("/api/media", outputDir);
+          return Promise.resolve();
         },
       });
     });
   },
-  config: packageConfigSchema
+  config: packageConfigSchema,
 } satisfies TokenRingPlugin<typeof packageConfigSchema>;

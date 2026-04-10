@@ -1,4 +1,4 @@
-import {RPCSchema} from "@tokenring-ai/rpc/types";
+import type {RPCSchema} from "@tokenring-ai/rpc/types";
 import {z} from "zod";
 
 export const ImageIndexEntrySchema = z.object({
@@ -32,7 +32,10 @@ export default {
         agentId: z.string(),
         prompt: z.string(),
         model: z.string().optional(),
-        aspectRatio: z.enum(["square", "tall", "wide"]).default("square").optional(),
+        aspectRatio: z
+          .enum(["square", "tall", "wide"])
+          .default("square")
+          .optional(),
         keywords: z.array(z.string()).optional(),
       }),
       result: z.object({
