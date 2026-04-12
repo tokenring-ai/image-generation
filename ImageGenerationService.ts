@@ -8,7 +8,7 @@ import deepMerge from "@tokenring-ai/utility/object/deepMerge";
 import {generateHumanId} from "@tokenring-ai/utility/string/generateHumanId";
 import {exiftool} from "exiftool-vendored";
 import {Buffer} from "node:buffer";
-import {ImageGenerationAgentConfigSchema, type ParsedImageGenerationConfig,} from "./schema.ts";
+import {ImageGenerationAgentConfigSchema, type ParsedImageGenerationConfig} from "./schema.ts";
 import {ImageGenerationState} from "./state/ImageGenerationState.ts";
 
 export type GenerateImageOptions = {

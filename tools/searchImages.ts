@@ -1,5 +1,5 @@
 import type Agent from "@tokenring-ai/agent/Agent";
-import type {TokenRingToolDefinition, TokenRingToolJSONResult,} from "@tokenring-ai/chat/schema";
+import type {TokenRingToolDefinition, TokenRingToolResult} from "@tokenring-ai/chat/schema";
 import FileSystemService from "@tokenring-ai/filesystem/FileSystemService";
 import {z} from "zod";
 import ImageGenerationService from "../ImageGenerationService.ts";
@@ -23,20 +23,7 @@ function similarity(a: string, b: string): number {
 async function execute(
   {query, limit = 10}: z.output<typeof inputSchema>,
   agent: Agent,
-): Promise<
-  TokenRingToolJSONResult<{
-    message: string;
-    results: Array<{
-      filename: string;
-      path: string;
-      score: number;
-      mimeType: string;
-      width: number;
-      height: number;
-      keywords: string[];
-    }>;
-  }>
-> {
+): Promise<TokenRingToolResult> {
   const imageService = agent.requireServiceByType(ImageGenerationService);
   const fileSystem = agent.requireServiceByType(FileSystemService);
 
@@ -82,21 +69,18 @@ async function execute(
     `[${name}] Found ${results.length} matches, returning top ${topResults.length}`,
   );
 
-  return {
-    type: "json",
-    data: {
-      results: topResults.map((r) => ({
-        filename: r.filename,
-        path: `${targetDir}/${r.filename}`,
-        score: r.score,
-        mimeType: r.mimeType,
-        width: r.width,
-        height: r.height,
-        keywords: r.keywords,
-      })),
-      message: `Found ${topResults.length} images matching "${query}"`,
-    },
-  };
+  return JSON.stringify({
+    results: topResults.map((r) => ({
+      filename: r.filename,
+      path: `${targetDir}/${r.filename}`,
+      score: r.score,
+      mimeType: r.mimeType,
+      width: r.width,
+      height: r.height,
+      keywords: r.keywords,
+    })),
+    message: `Found ${topResults.length} images matching "${query}"`
+  });
 }
 
 const description =

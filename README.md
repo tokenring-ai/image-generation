@@ -53,6 +53,7 @@ ImageGenerationConfigSchema = z.object({
 ```
 
 No configuration is required by default. The plugin automatically:
+
 1. Registers tools for image generation and search
 2. Adds chat commands for image management
 3. Initializes the service with provided configuration
@@ -78,6 +79,7 @@ Main service managing image generation and indexing functionality.
 **Description:** Image generation with configurable output directories
 
 **Constructor:**
+
 ```typescript
 constructor(config: {
   outputDirectory: string,
@@ -124,6 +126,7 @@ async addToIndex(
 ```
 
 **Parameters:**
+
 - `directory`: Output directory path
 - `filename`: Image filename
 - `mimeType`: Image MIME type
@@ -141,10 +144,12 @@ async reindex(directory: string, agent: Agent): Promise<void>
 ```
 
 **Parameters:**
+
 - `directory`: Output directory path
 - `agent`: Agent instance for file operations
 
 **Behavior:**
+
 - Scans directory for image files (jpg, jpeg, png, webp)
 - Reads EXIF metadata from each file
 - Updates image_index.json with metadata entries
@@ -159,6 +164,7 @@ The package provides the following tools:
 Generate an AI image with configurable parameters and save it to the output directory with EXIF metadata.
 
 **Tool Definition:**
+
 ```typescript
 import {TokenRingToolDefinition} from "@tokenring-ai/chat/schema";
 import {z} from "zod";
@@ -181,6 +187,7 @@ const image_generate: TokenRingToolDefinition = {
 ```
 
 **Usage Example:**
+
 ```typescript
 // Generate a landscape image
 const result = await agent.useTool("image_generate", {
@@ -193,6 +200,7 @@ console.log(result.path); // Path to the generated image
 ```
 
 **Parameters:**
+
 - `prompt` (required): Description of the image to generate
 - `aspectRatio` (optional): "square" (1024x1024), "tall" (1024x1536), or "wide" (1536x1024). Default: "square"
 - `outputDirectory` (optional): Override output directory
@@ -204,6 +212,7 @@ console.log(result.path); // Path to the generated image
 Search for generated images based on keyword similarity using a custom similarity algorithm that matches query terms against image keywords from the index.
 
 **Tool Definition:**
+
 ```typescript
 import {TokenRingToolDefinition} from "@tokenring-ai/chat/schema";
 import {z} from "zod";
@@ -223,12 +232,14 @@ const image_search: TokenRingToolDefinition = {
 ```
 
 **Similarity Algorithm:**
+
 - Exact matches receive a score of 1.0
 - Partial matches (one contains the other) receive a score of 0.8
 - Word-based matching for partial matches with proportional scoring
 - Results sorted by similarity score in descending order
 
 **Usage Example:**
+
 ```typescript
 // Search for sunset-related images
 const searchResults = await agent.useTool("image_search", {
@@ -242,10 +253,12 @@ for (const image of searchResults.results) {
 ```
 
 **Parameters:**
+
 - `query` (required): Search query to match against image keywords
 - `limit` (optional): Maximum number of results to return. Default: 10
 
 **Response:**
+
 ```typescript
 {
   type: "json",
@@ -271,6 +284,7 @@ for (const image of searchResults.results) {
 Manage image generation and indexing.
 
 **Usage:**
+
 ```bash
 /image reindex
 ```
@@ -286,16 +300,19 @@ Regenerate the image index by scanning all images and reading their metadata.
 ```
 
 This command:
+
 1. Scans the output directory for image files (jpg, jpeg, png, webp)
 2. Reads EXIF metadata from each file using exiftool-vendored
 3. Rebuilds the index with metadata (filename, MIME type, dimensions, keywords)
 
 **Example:**
+
 ```bash
 /image reindex
 ```
 
 Output:
+
 ```
 Reindexing images in ./images/generated...
 Reindexed 15 images

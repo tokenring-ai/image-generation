@@ -1,5 +1,5 @@
 import type Agent from "@tokenring-ai/agent/Agent";
-import type {TokenRingToolDefinition, TokenRingToolJSONResult,} from "@tokenring-ai/chat/schema";
+import type {TokenRingToolDefinition, TokenRingToolResult} from "@tokenring-ai/chat/schema";
 import {z} from "zod";
 import ImageGenerationService from "../ImageGenerationService.ts";
 
@@ -9,17 +9,12 @@ const displayName = "ImageGeneration/generateImage";
 async function execute(
   args: z.output<typeof inputSchema>,
   agent: Agent,
-): Promise<TokenRingToolJSONResult<{ path: string }>> {
+): Promise<TokenRingToolResult> {
   const imageService = agent.requireServiceByType(ImageGenerationService);
 
   const result = await imageService.generateImage(args, agent);
 
-  return {
-    type: "json",
-    data: {
-      path: result.filePath,
-    },
-  };
+  return JSON.stringify({path: result.filePath});
 }
 
 const description =
