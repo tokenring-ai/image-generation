@@ -65,7 +65,7 @@ export default createRPCEndpoint(ImageGenerationRpcSchema, {
       imageService.getDefaultModel();
     if (!modelName) throw new Error("No image model is configured");
 
-    const imageClient = await imageModelRegistry.getClient(modelName);
+    const imageClient = imageModelRegistry.getClient(modelName);
 
     let size: `${number}x${number}`;
     let width: number, height: number;

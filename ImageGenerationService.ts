@@ -148,8 +148,8 @@ export default class ImageGenerationService implements TokenRingService {
           keywords: metadata.Keywords || [],
         });
         entries.push(entry);
-      } catch (error) {
-        agent.warningMessage(`Failed to read metadata for ${file}: ${error}`);
+      } catch (error: unknown) {
+        agent.warningMessage(`Failed to read metadata for ${file}`, error as Error);
       }
     }
 
@@ -181,7 +181,7 @@ export default class ImageGenerationService implements TokenRingService {
 
     agent.infoMessage(`[${this.name}] Generating image: "${prompt}"`);
 
-    const imageClient = await imageModelRegistry.getClient(model);
+    const imageClient = imageModelRegistry.getClient(model);
 
     let size: `${number}x${number}`;
     let width: number, height: number;
@@ -228,9 +228,9 @@ export default class ImageGenerationService implements TokenRingService {
     try {
       await exiftool.write(filePath, exifData);
       agent.infoMessage(`[${this.name}] Added metadata to EXIF data`);
-    } catch (error) {
+    } catch (error: unknown) {
       agent.warningMessage(
-        `[${this.name}] Failed to write EXIF data: ${error}`,
+        `[${this.name}] Failed to write EXIF data:`, error as Error
       );
     }
 
