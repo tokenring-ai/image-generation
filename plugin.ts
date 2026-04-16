@@ -24,7 +24,7 @@ export default {
   install(app, config) {
     app.addServices(new ImageGenerationService(app, config.imageGeneration));
     app.waitForService(ChatService, (chatService) =>
-      chatService.addTools(tools),
+      chatService.addTools(...tools),
     );
     app.waitForService(AgentCommandService, (agentCommandService) =>
       agentCommandService.addAgentCommands(agentCommands),

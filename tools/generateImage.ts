@@ -4,7 +4,7 @@ import {z} from "zod";
 import ImageGenerationService from "../ImageGenerationService.ts";
 
 const name = "image_generate";
-const displayName = "ImageGeneration/generateImage";
+const displayName = "Image Generation/generateImage";
 
 async function execute(
   args: z.output<typeof inputSchema>,

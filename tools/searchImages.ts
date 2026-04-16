@@ -5,7 +5,7 @@ import {z} from "zod";
 import ImageGenerationService from "../ImageGenerationService.ts";
 
 const name = "image_search";
-const displayName = "ImageGeneration/searchImages";
+const displayName = "Image Generation/searchImages";
 
 function similarity(a: string, b: string): number {
   const aLower = a.toLowerCase();
