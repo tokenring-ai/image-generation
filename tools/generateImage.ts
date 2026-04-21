@@ -1,32 +1,25 @@
 import type Agent from "@tokenring-ai/agent/Agent";
-import type {TokenRingToolDefinition, TokenRingToolResult} from "@tokenring-ai/chat/schema";
-import {z} from "zod";
+import type { TokenRingToolDefinition, TokenRingToolResult } from "@tokenring-ai/chat/schema";
+import { z } from "zod";
 import ImageGenerationService from "../ImageGenerationService.ts";
 
 const name = "image_generate";
 const displayName = "Image Generation/generateImage";
 
-async function execute(
-  args: z.output<typeof inputSchema>,
-  agent: Agent,
-): Promise<TokenRingToolResult> {
+async function execute(args: z.output<typeof inputSchema>, agent: Agent): Promise<TokenRingToolResult> {
   const imageService = agent.requireServiceByType(ImageGenerationService);
 
   const result = await imageService.generateImage(args, agent);
 
-  return JSON.stringify({path: result.filePath});
+  return JSON.stringify({ path: result.filePath });
 }
 
-const description =
-  "Generate an AI image and save it to a configured output directory";
+const description = "Generate an AI image and save it to a configured output directory";
 
 const inputSchema = z.object({
   prompt: z.string().describe("Description of the image to generate"),
   aspectRatio: z.enum(["square", "tall", "wide"]).default("square"),
-  keywords: z
-    .array(z.string())
-    .describe("Keywords to add to image EXIF/IPTC metadata")
-    .optional(),
+  keywords: z.array(z.string()).describe("Keywords to add to image EXIF/IPTC metadata").exactOptional(),
 });
 
 export default {

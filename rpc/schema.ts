@@ -1,6 +1,6 @@
-import type {RPCSchema} from "@tokenring-ai/rpc/types";
-import {z} from "zod";
-import {AgentNotFoundSchema} from "@tokenring-ai/agent/schema";
+import { AgentNotFoundSchema } from "@tokenring-ai/agent/schema";
+import type { RPCSchema } from "@tokenring-ai/rpc/types";
+import { z } from "zod";
 
 export const ImageIndexEntrySchema = z.object({
   filename: z.string(),
@@ -19,8 +19,8 @@ export default {
     getImages: {
       type: "query",
       input: z.object({
-        search: z.string().optional(),
-        limit: z.number().int().positive().default(200).optional(),
+        search: z.string().exactOptional(),
+        limit: z.number().int().positive().default(200).exactOptional(),
       }),
       result: z.object({
         images: z.array(ImageIndexEntrySchema),
@@ -32,23 +32,20 @@ export default {
       input: z.object({
         agentId: z.string(),
         prompt: z.string(),
-        model: z.string().optional(),
-        aspectRatio: z
-          .enum(["square", "tall", "wide"])
-          .default("square")
-          .optional(),
-        keywords: z.array(z.string()).optional(),
+        model: z.string().exactOptional(),
+        aspectRatio: z.enum(["square", "tall", "wide"]).default("square").exactOptional(),
+        keywords: z.array(z.string()).exactOptional(),
       }),
       result: z.discriminatedUnion("status", [
         z.object({
-          status: z.literal('success'),
+          status: z.literal("success"),
           filename: z.string(),
           width: z.number(),
           height: z.number(),
           mimeType: z.string(),
           message: z.string(),
         }),
-        AgentNotFoundSchema
+        AgentNotFoundSchema,
       ]),
     },
   },

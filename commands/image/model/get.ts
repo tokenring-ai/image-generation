@@ -1,11 +1,9 @@
-import type {AgentCommandInputSchema, AgentCommandInputType, TokenRingAgentCommand} from "@tokenring-ai/agent/types";
+import type { AgentCommandInputSchema, AgentCommandInputType, TokenRingAgentCommand } from "@tokenring-ai/agent/types";
 import ImageGenerationService from "../../../ImageGenerationService.ts";
 
 const inputSchema = {} as const satisfies AgentCommandInputSchema;
 
-function execute({
-                   agent,
-                 }: AgentCommandInputType<typeof inputSchema>): Promise<string> {
+function execute({ agent }: AgentCommandInputType<typeof inputSchema>): Promise<string> {
   return Promise.resolve(`Current image model: ${agent.requireServiceByType(ImageGenerationService).getModel(agent) ?? "(none)"}`);
 }
 

@@ -1,1 +1,1 @@
-export {default as ImageGenerationService} from "./ImageGenerationService.ts";
+export { default as ImageGenerationService } from "./ImageGenerationService.ts";
