@@ -54,7 +54,9 @@ export default createRPCEndpoint(ImageGenerationRpcSchema, {
 
   async generateImage(args, app: TokenRingApp) {
     const agent = app.requireService(AgentManager).getAgent(args.agentId);
-    if (!agent) throw new Error("Agent not found");
+    if (!agent) {
+      return {status: 'agentNotFound'};
+    }
 
     const imageService = app.requireService(ImageGenerationService);
     const imageModelRegistry = app.requireService(ImageGenerationModelRegistry);
@@ -121,6 +123,7 @@ export default createRPCEndpoint(ImageGenerationRpcSchema, {
     await fs.appendFile(indexPath, entry);
 
     return {
+      status: 'success' as const,
       filename,
       width,
       height,

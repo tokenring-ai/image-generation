@@ -1,5 +1,6 @@
 import type {RPCSchema} from "@tokenring-ai/rpc/types";
 import {z} from "zod";
+import {AgentNotFoundSchema} from "@tokenring-ai/agent/schema";
 
 export const ImageIndexEntrySchema = z.object({
   filename: z.string(),
@@ -38,13 +39,17 @@ export default {
           .optional(),
         keywords: z.array(z.string()).optional(),
       }),
-      result: z.object({
-        filename: z.string(),
-        width: z.number(),
-        height: z.number(),
-        mimeType: z.string(),
-        message: z.string(),
-      }),
+      result: z.discriminatedUnion("status", [
+        z.object({
+          status: z.literal('success'),
+          filename: z.string(),
+          width: z.number(),
+          height: z.number(),
+          mimeType: z.string(),
+          message: z.string(),
+        }),
+        AgentNotFoundSchema
+      ]),
     },
   },
 } satisfies RPCSchema;
