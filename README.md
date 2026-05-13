@@ -1,10 +1,13 @@
 # @tokenring-ai/image-generation
 
-AI-powered image generation service with configurable output directories, EXIF metadata support, and local image search capabilities.
+AI-powered image generation service with configurable output directories, EXIF metadata support, and local image search
+capabilities.
 
 ## Overview
 
-This package provides AI-powered image generation capabilities for the Token Ring ecosystem. It integrates with the agent system to generate images based on prompts, save them with metadata, and search through generated images using keyword similarity.
+This package provides AI-powered image generation capabilities for the Token Ring ecosystem. It integrates with the
+agent system to generate images based on prompts, save them with metadata, and search through generated images using
+keyword similarity.
 
 ## Key Features
 
@@ -16,6 +19,8 @@ This package provides AI-powered image generation capabilities for the Token Rin
 - **Aspect Ratio Support**: Generate images in square (1024x1024), tall (1024x1536), or wide (1536x1024) formats
 - **Model Flexibility**: Support for multiple AI image generation models through the model registry
 - **Keyword-Based Similarity Search**: Implements custom similarity algorithm matching keywords from image metadata
+- **RPC Endpoints**: HTTP API for image generation and retrieval
+- **Web Host Integration**: Static file serving for generated media at `/api/media`
 
 ## Installation
 
@@ -27,15 +32,12 @@ bun add @tokenring-ai/image-generation
 
 Configure the image generation plugin in your application config:
 
-```typescript
-import {z} from "zod";
-
-const config = {
-  imageGeneration: {
-    outputDirectory: "./images/generated",
-    model: "dall-e-3"
-  }
-};
+```yaml
+imageGeneration:
+  defaultModels:
+    - openai:dall-e-3
+  agentDefaults:
+    outputDirectory: "./images/generated"
 ```
 
 ### Configuration Schema
@@ -43,30 +45,25 @@ const config = {
 The plugin uses the following configuration schema:
 
 ```typescript
-import {ImageGenerationConfigSchema} from "@tokenring-ai/image-generation";
+import {ImageGenerationServiceConfigSchema} from "@tokenring-ai/image-generation";
 
 // Schema structure
-ImageGenerationConfigSchema = z.object({
-  outputDirectory: z.string(),
-  model: z.string(),
+ImageGenerationServiceConfigSchema = z.object({
+  defaultModels: z.array(z.string()).default([]),
+  agentDefaults: z.object({
+    model: z.string().exactOptional(),
+    outputDirectory: z.string(),
+  }),
 });
 ```
 
-No configuration is required by default. The plugin automatically:
+**Configuration Options:**
 
-1. Registers tools for image generation and search
-2. Adds chat commands for image management
-3. Initializes the service with provided configuration
-
-## Agent Configuration
-
-The image generation service integrates with the agent system and provides the following configuration options:
-
-```typescript
-// Service configuration options
-outputDirectory: string;  // Base directory for storing generated images
-model: string;            // Default AI model for image generation
-```
+| Field                           | Type       | Required | Description                                                                |
+|---------------------------------|------------|----------|----------------------------------------------------------------------------|
+| `defaultModels`                 | `string[]` | No       | List of model names to try for default selection (first available is used) |
+| `agentDefaults.outputDirectory` | `string`   | Yes      | Base directory for storing generated images                                |
+| `agentDefaults.model`           | `string`   | No       | Default image generation model for agents                                  |
 
 ## Core Components
 
@@ -81,37 +78,94 @@ Main service managing image generation and indexing functionality.
 **Constructor:**
 
 ```typescript
-constructor(config: {
-  outputDirectory: string,
-  model: string
-})
+constructor(
+  app: TokenRingApp,
+  options: ParsedImageGenerationConfig
+)
 ```
 
 **Methods:**
 
-#### getOutputDirectory()
+#### getDefaultOutputDirectory()
 
-Get the configured output directory for generated images.
+Get the configured default output directory for generated images.
 
 ```typescript
-getOutputDirectory(): string
+getDefaultOutputDirectory(): string
 ```
 
 **Returns:** The configured output directory path
 
-#### getModel()
+#### getOutputDirectory(agent)
 
-Get the configured image generation model.
+Get the output directory for a specific agent (from agent state).
 
 ```typescript
-getModel(): string
+getOutputDirectory(agent: Agent): string
 ```
 
-**Returns:** The configured image generation model name
+**Parameters:**
+
+- `agent`: Agent instance
+
+**Returns:** The agent's output directory path
+
+#### getDefaultModel()
+
+Get the globally configured default image generation model.
+
+```typescript
+getDefaultModel(): string | null
+```
+
+**Returns:** The default model name or null if not configured
+
+#### getModel(agent)
+
+Get the image generation model for a specific agent.
+
+```typescript
+getModel(agent: Agent): string | null
+```
+
+**Parameters:**
+
+- `agent`: Agent instance
+
+**Returns:** The agent's model or null
+
+#### setModel(model, agent)
+
+Set the image generation model for a specific agent.
+
+```typescript
+setModel(model: string, agent: Agent): void
+```
+
+**Parameters:**
+
+- `model`: Model name to set
+- `agent`: Agent instance
+
+#### requireModel(agent)
+
+Get the model for an agent, throwing an error if not set.
+
+```typescript
+requireModel(agent: Agent): string
+```
+
+**Parameters:**
+
+- `agent`: Agent instance
+
+**Returns:** The model name
+
+**Throws:** Error if no model is configured
 
 #### addToIndex()
 
-Add an image entry to the index with EXIF metadata.
+Add an image entry to the index with metadata.
 
 ```typescript
 async addToIndex(
@@ -137,15 +191,14 @@ async addToIndex(
 
 #### reindex()
 
-Regenerate the image index from existing files in the output directory by scanning all images and reading their metadata.
+Regenerate the image index from existing files in the output directory.
 
 ```typescript
-async reindex(directory: string, agent: Agent): Promise<void>
+async reindex(agent: Agent): Promise<void>
 ```
 
 **Parameters:**
 
-- `directory`: Output directory path
 - `agent`: Agent instance for file operations
 
 **Behavior:**
@@ -155,13 +208,40 @@ async reindex(directory: string, agent: Agent): Promise<void>
 - Updates image_index.json with metadata entries
 - Logs progress and errors
 
+#### generateImage()
+
+Generate an AI image and save it with metadata.
+
+```typescript
+async generateImage(
+  options: GenerateImageOptions,
+  agent: Agent
+): Promise<{
+  mediaType: string;
+  fileName: string;
+  filePath: string;
+  buffer: Buffer;
+}>
+```
+
+**Parameters:**
+
+- `options.prompt`: Description of the image to generate
+- `options.aspectRatio`: "square", "tall", or "wide" (default: "square")
+- `options.keywords`: Optional array of keywords for metadata
+- `agent`: Agent instance
+
+**Returns:** Object with mediaType, fileName, filePath, and buffer
+
+**Throws:** Error if no model is selected or prompt is missing
+
 ## Tools
 
 The package provides the following tools:
 
 ### image_generate
 
-Generate an AI image with configurable parameters and save it to the output directory with EXIF metadata.
+Generate an AI image and save it to a configured output directory.
 
 **Tool Definition:**
 
@@ -171,13 +251,11 @@ import {z} from "zod";
 
 const image_generate: TokenRingToolDefinition = {
   name: "image_generate",
-  displayName: "ImageGeneration/generateImage",
+  displayName: "Image Generation/generateImage",
   description: "Generate an AI image and save it to a configured output directory",
   inputSchema: z.object({
     prompt: z.string().describe("Description of the image to generate"),
-    aspectRatio: z.enum(["square", "tall", "wide"]).default("square").optional(),
-    outputDirectory: z.string().describe("Output directory (will prompt if not provided)").optional(),
-    model: z.string().describe("Image generation model to use").optional(),
+    aspectRatio: z.enum(["square", "tall", "wide"]).default("square"),
     keywords: z.array(z.string()).describe("Keywords to add to image EXIF/IPTC metadata").optional(),
   }),
   execute: async (input, agent) => {
@@ -196,20 +274,26 @@ const result = await agent.useTool("image_generate", {
   keywords: ["landscape", "nature", "mountains", "lake", "sunset"]
 });
 
-console.log(result.path); // Path to the generated image
+console.log(result); // { path: "./images/generated/abc123.png" }
 ```
 
 **Parameters:**
 
-- `prompt` (required): Description of the image to generate
-- `aspectRatio` (optional): "square" (1024x1024), "tall" (1024x1536), or "wide" (1536x1024). Default: "square"
-- `outputDirectory` (optional): Override output directory
-- `model` (optional): Override default image generation model
-- `keywords` (optional): Keywords to add to image EXIF/IPTC metadata
+| Parameter     | Type                           | Required | Description                                 |
+|---------------|--------------------------------|----------|---------------------------------------------|
+| `prompt`      | `string`                       | Yes      | Description of the image to generate        |
+| `aspectRatio` | `"square" \| "tall" \| "wide"` | No       | Aspect ratio. Default: "square" (1024x1024) |
+| `keywords`    | `string[]`                     | No       | Keywords to add to image EXIF/IPTC metadata |
+
+**Aspect Ratios:**
+
+- `square`: 1024x1024
+- `tall`: 1024x1536
+- `wide`: 1536x1024
 
 ### image_search
 
-Search for generated images based on keyword similarity using a custom similarity algorithm that matches query terms against image keywords from the index.
+Search for generated images based on keyword similarity.
 
 **Tool Definition:**
 
@@ -219,7 +303,7 @@ import {z} from "zod";
 
 const image_search: TokenRingToolDefinition = {
   name: "image_search",
-  displayName: "ImageGeneration/searchImages",
+  displayName: "Image Generation/searchImages",
   description: "Search for images in the index based on keyword similarity",
   inputSchema: z.object({
     query: z.string().describe("Search query to match against image keywords"),
@@ -234,7 +318,7 @@ const image_search: TokenRingToolDefinition = {
 **Similarity Algorithm:**
 
 - Exact matches receive a score of 1.0
-- Partial matches (one contains the other) receive a score of 0.8
+- Partial matches (one string contains the other) receive a score of 0.8
 - Word-based matching for partial matches with proportional scoring
 - Results sorted by similarity score in descending order
 
@@ -247,41 +331,52 @@ const searchResults = await agent.useTool("image_search", {
   limit: 3
 });
 
-for (const image of searchResults.results) {
-  console.log(image.filename, image.score, image.keywords);
-}
+console.log(searchResults);
+// {
+//   results: [
+//     {
+//       filename: "sunset_lake.png",
+//       path: "./images/generated/sunset_lake.png",
+//       score: 0.8,
+//       mimeType: "image/png",
+//       width: 1024,
+//       height: 1024,
+//       keywords: ["sunset", "lake", "landscape"]
+//     }
+//   ],
+//   message: "Found 3 images matching \"sunset landscape\""
+// }
 ```
 
 **Parameters:**
 
-- `query` (required): Search query to match against image keywords
-- `limit` (optional): Maximum number of results to return. Default: 10
+| Parameter | Type     | Required | Description                                      |
+|-----------|----------|----------|--------------------------------------------------|
+| `query`   | `string` | Yes      | Search query to match against image keywords     |
+| `limit`   | `number` | No       | Maximum number of results to return. Default: 10 |
 
-**Response:**
+**Response Schema:**
 
 ```typescript
 {
-  type: "json",
-  data: {
-    results: Array<{
-      filename: string,
-      path: string,
-      score: number,
-      mimeType: string,
-      width: number,
-      height: number,
-      keywords: string[]
-    }>,
-    message: string
-  }
+  results: Array<{
+    filename: string;
+    path: string;
+    score: number;
+    mimeType: string;
+    width: number;
+    height: number;
+    keywords: string[];
+  }>;
+  message: string;
 }
 ```
 
 ## Chat Commands
 
-### /image
+### /image reindex
 
-Manage image generation and indexing.
+Regenerate the image index by scanning all images and reading their metadata.
 
 **Usage:**
 
@@ -289,33 +384,195 @@ Manage image generation and indexing.
 /image reindex
 ```
 
-**Subcommands:**
-
-#### reindex
-
-Regenerate the image index by scanning all images and reading their metadata.
-
-```bash
-/image reindex
-```
-
-This command:
+**Behavior:**
 
 1. Scans the output directory for image files (jpg, jpeg, png, webp)
 2. Reads EXIF metadata from each file using exiftool-vendored
 3. Rebuilds the index with metadata (filename, MIME type, dimensions, keywords)
 
-**Example:**
+**Example Output:**
+
+```text
+Reindexing images in ./images/generated...
+Reindexed 15 images.
+Image index re-indexed successfully.
+```
+
+### /image model get
+
+Show the currently active image generation model.
+
+**Usage:**
 
 ```bash
-/image reindex
+/image model get
 ```
 
-Output:
+**Example Output:**
 
+```text
+Current image model: openai:dall-e-3
 ```
-Reindexing images in ./images/generated...
-Reindexed 15 images
+
+### /image model set <model_name>
+
+Set the image generation model to a specific model by name.
+
+**Usage:**
+
+```bash
+/image model set openai:dall-e-3
+```
+
+**Example Output:**
+
+```text
+Image model set to openai:dall-e-3
+```
+
+### /image model select
+
+Open an interactive tree-based selector to choose an image generation model. Models are grouped by provider with
+availability status.
+
+**Usage:**
+
+```bash
+/image model select
+```
+
+**Behavior:**
+
+- Displays a tree of available image generation models
+- Models are grouped by provider (e.g., OpenAI, Anthropic)
+- Shows online/offline status for each model
+- Allows interactive selection via tree navigation
+
+**Example Output:**
+
+```text
+Choose an image generation model:
+[Interactive tree selector]
+Image model set to openai:dall-e-3
+```
+
+### /image model reset
+
+Reset the image generation model to the initial configured value.
+
+**Usage:**
+
+```bash
+/image model reset
+```
+
+**Example Output:**
+
+```text
+Image model reset to openai:dall-e-3
+```
+
+**Note:** Requires an initial model to be configured in agent defaults.
+
+## RPC Endpoints
+
+The package exposes an RPC endpoint at `/rpc/image-generation` with the following methods:
+
+### getImages
+
+Retrieve a list of generated images from the index.
+
+**Request:**
+
+```typescript
+{
+  search?: string;      // Optional search term to filter by keywords or filename
+  limit?: number;       // Maximum number of results (default: 200)
+}
+```
+
+**Response:**
+
+```typescript
+{
+  images: Array<{
+    filename: string;
+    mimeType: string;
+    width: number;
+    height: number;
+    keywords: string[];
+  }>;
+  count: number;        // Total number of images in index
+}
+```
+
+**Example:**
+
+```typescript
+// Get all images
+const allImages = await rpcClient.getImages({});
+
+// Search for sunset images
+const sunsetImages = await rpcClient.getImages({ search: "sunset" });
+
+// Get last 50 images
+const recentImages = await rpcClient.getImages({ limit: 50 });
+```
+
+### generateImage
+
+Generate an image via RPC and save it to the output directory.
+
+**Request:**
+
+```typescript
+{
+  agentId: string;      // Agent ID to use for generation
+  prompt: string;       // Description of the image to generate
+  model ? : string;       // Optional model override
+  aspectRatio ? : "square" | "tall" | "wide";  // Default: "square"
+  keywords ? : string[];  // Optional keywords for metadata
+}
+```
+
+**Response:**
+
+```typescript
+// Success
+{
+  status: "success";
+  filename: string;
+  width: number;
+  height: number;
+  mimeType: string;
+  message: string;
+}
+
+// Error
+{
+  status: "agentNotFound";
+}
+```
+
+**Example:**
+
+```typescript
+const result = await rpcClient.generateImage({
+  agentId: "my-agent",
+  prompt: "A beautiful sunset over mountains",
+  aspectRatio: "wide",
+  keywords: ["sunset", "mountains", "landscape"]
+});
+
+console.log(result);
+// {
+//   status: "success",
+//   filename: "abc123.png",
+//   width: 1536,
+//   height: 1024,
+//   mimeType: "image/png",
+//   message: "Generated: abc123.png"
+// }
 ```
 
 ## Usage Examples
@@ -371,46 +628,64 @@ const searchResult = await agent.useTool("image_search", {
   query: "coffee cafe interior",
   limit: 5
 });
+
+// Change model for next generation
+await agent.runCommand("/image model set anthropic:image-gen-v1");
 ```
 
 ## Package Structure
 
-```
+```text
 pkg/image-generation/
-├── index.ts                     # Package exports (ImageGenerationConfigSchema, ImageGenerationService)
-├── plugin.ts                    # Plugin integration logic and configuration schema
-├── ImageGenerationService.ts    # Core service implementation
-├── tools.ts                     # Tool exports
-├── commands.ts                  # Chat command exports
-├── commands/
-│   └── image.ts                 # /image command implementation
+├── index.ts                         # Package exports (ImageGenerationService)
+├── plugin.ts                        # Plugin integration logic and configuration
+├── ImageGenerationService.ts        # Core service implementation
+├── schema.ts                        # Configuration and state schemas
+├── tools.ts                         # Tool exports
 ├── tools/
-│   ├── generateImage.ts         # image_generate tool implementation
-│   └── searchImages.ts          # image_search tool implementation
-├── package.json                 # Package metadata
-└── vitest.config.ts             # Test configuration
+│   ├── generateImage.ts             # image_generate tool implementation
+│   └── searchImages.ts              # image_search tool implementation
+├── commands.ts                      # Chat command exports
+├── commands/
+│   └── image.ts                     # /image reindex command
+│   └── model/
+│       ├── get.ts                   # /image model get command
+│       ├── set.ts                   # /image model set command
+│       ├── select.ts                # /image model select command
+│       └── reset.ts                 # /image model reset command
+├── rpc/
+│   ├── imageGeneration.ts           # RPC endpoint implementation
+│   └── schema.ts                    # RPC schema definitions
+├── state/
+│   └── ImageGenerationState.ts      # Agent state slice for image settings
+├── package.json                     # Package metadata
+└── vitest.config.ts                 # Test configuration
 ```
 
-## Configuration Schema
+## State Management
 
-### ImageGenerationConfigSchema
+The package uses `ImageGenerationState` to maintain per-agent configuration:
 
-```typescript
-import {ImageGenerationConfigSchema} from "@tokenring-ai/image-generation";
+**State Fields:**
 
-// Schema structure
-ImageGenerationConfigSchema = z.object({
-  outputDirectory: z.string(),
-  model: z.string(),
-});
-```
+| Field             | Type             | Description                                             |
+|-------------------|------------------|---------------------------------------------------------|
+| `model`           | `string \| null` | Currently selected image generation model for the agent |
+| `outputDirectory` | `string`         | Output directory for generated images                   |
 
-### Plugin Configuration Schema
+**State Commands:**
 
 ```typescript
-const packageConfigSchema = z.object({
-  imageGeneration: ImageGenerationConfigSchema.optional(),
-});
+// Get current state
+const state = agent.getState(ImageGenerationState);
+console.log(state.model);
+console.log(state.outputDirectory);
+
+// Show state
+console.log(state.show());
+// Output:
+// Image Model: openai:dall-e-3
+// Output Directory: ./images/generated
 ```
 
 ## Integration
@@ -421,7 +696,9 @@ The package registers the following services:
 
 1. **ImageGenerationService**: Core image generation and indexing functionality
 2. **ChatService**: Registers tools for image generation and search
-3. **AgentCommandService**: Registers /image command
+3. **AgentCommandService**: Registers `/image` commands
+4. **RpcService**: Registers `/rpc/image-generation` endpoint
+5. **WebHostService**: Registers `/api/media` static file serving
 
 ### Tool Registration
 
@@ -430,29 +707,32 @@ The following tools are automatically registered:
 - `image_generate`: Generate AI images
 - `image_search`: Search generated images by keyword similarity
 
-### State Management
+### Web Host Integration
 
-The package does not require any state slices. All state is managed through file system operations.
+The package registers a static file resource for media files:
+
+- **Resource Name**: "Image Media Files"
+- **Endpoint**: `/api/media`
+- **Directory**: Configured `outputDirectory`
+
+This allows generated images to be served via HTTP:
+
+```text
+GET /api/media/abc123.png  -> Returns the image file
+```
 
 ## Error Handling
 
 The package includes comprehensive error handling:
 
-- **Prompt Validation**: Ensures prompt is provided for image generation
-- **File Operations**: Proper error handling for file read/write operations
-- **Metadata Handling**: Graceful handling of EXIF metadata errors with warnings
-- **Index Management**: Error handling for index file operations
-- **Model Availability**: Proper error handling when AI models are unavailable
-- **Search Errors**: Fallback for failed index parsing with warnings
-
-**Common Errors:**
-
-| Error | Description | Solution |
-|-------|-------------|----------|
-| `Prompt is required` | Missing prompt parameter | Provide a prompt string |
-| `No index found at {path}` | Index file doesn't exist | Run `/image reindex` first |
-| `Failed to read metadata for {file}` | EXIF read error | Non-fatal, continues processing other files |
-| `Failed to write EXIF data` | EXIF write error | Non-fatal, image still saved |
+| Error                                              | Description                    | Solution                                      |
+|----------------------------------------------------|--------------------------------|-----------------------------------------------|
+| `Prompt is required`                               | Missing prompt parameter       | Provide a prompt string                       |
+| `No index found at {path}`                         | Index file doesn't exist       | Run `/image reindex` first                    |
+| `Failed to read metadata for {file}`               | EXIF read error                | Non-fatal, continues processing other files   |
+| `Failed to write EXIF data`                        | EXIF write error               | Non-fatal, image still saved                  |
+| `No image generation model is currently selected`  | No model configured            | Use `/image model set` or configure in plugin |
+| `No default image generation model was configured` | No models available at startup | Configure `defaultModels` in plugin config    |
 
 ## Performance Considerations
 
@@ -463,16 +743,6 @@ The package includes comprehensive error handling:
 - **Batch Processing**: Index rebuilding processes files in batches
 - **Metadata Caching**: EXIF metadata read once per file during indexing
 
-## Service Integration
-
-The image generation package integrates with the Token Ring ecosystem through:
-
-1. **Service Registration**: `ImageGenerationService` provides core functionality
-2. **Tool Registration**: `image_generate` and `image_search` tools are registered via ChatService
-3. **Command Registration**: `/image` command is registered via AgentCommandService
-4. **Model Registry**: Uses `ImageGenerationModelRegistry` from ai-client for AI model access
-5. **File System**: Uses FileSystemService for image storage and indexing
-
 ## Dependencies
 
 ### Production Dependencies
@@ -482,6 +752,9 @@ The image generation package integrates with the Token Ring ecosystem through:
 - `@tokenring-ai/app` (0.2.0) - Application framework
 - `@tokenring-ai/chat` (0.2.0) - Chat service integration
 - `@tokenring-ai/filesystem` (0.2.0) - File system operations
+- `@tokenring-ai/rpc` (0.2.0) - RPC service integration
+- `@tokenring-ai/utility` (0.2.0) - Utility functions
+- `@tokenring-ai/web-host` (0.2.0) - Web server integration
 - `exiftool-vendored` (^35.15.1) - EXIF metadata processing
 - `uuid` (^13.0.0) - Unique ID generation
 - `zod` (^4.3.6) - Schema validation
