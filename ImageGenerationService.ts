@@ -1,3 +1,4 @@
+import deepClone from "@tokenring-ai/utility/object/deepClone";
 import { Buffer } from "node:buffer";
 import type Agent from "@tokenring-ai/agent/Agent";
 import type { AgentCreationContext } from "@tokenring-ai/agent/types";
@@ -5,7 +6,6 @@ import { ImageGenerationModelRegistry } from "@tokenring-ai/ai-client/ModelRegis
 import type TokenRingApp from "@tokenring-ai/app";
 import type { TokenRingService } from "@tokenring-ai/app/types";
 import FileSystemService from "@tokenring-ai/filesystem/FileSystemService";
-import deepMerge from "@tokenring-ai/utility/object/deepMerge";
 import { generateHumanId } from "@tokenring-ai/utility/string/generateHumanId";
 import { exiftool } from "exiftool-vendored";
 import { ImageGenerationAgentConfigSchema, type ParsedImageGenerationConfig } from "./schema.ts";
@@ -15,6 +15,22 @@ export type GenerateImageOptions = {
   prompt: string;
   aspectRatio: "square" | "tall" | "wide";
   keywords?: string[] | undefined;
+};
+
+export type AdjustImageFormat = "jpeg" | "png" | "webp";
+
+export type AdjustImageOptions = {
+  source: string;
+  format?: AdjustImageFormat | undefined;
+  scale?: number | undefined;
+  brightness?: number | undefined;
+  quality?: number | undefined;
+};
+
+const FORMAT_INFO: Record<AdjustImageFormat, { mediaType: string; extension: string }> = {
+  jpeg: { mediaType: "image/jpeg", extension: "jpg" },
+  png: { mediaType: "image/png", extension: "png" },
+  webp: { mediaType: "image/webp", extension: "webp" },
 };
 
 export default class ImageGenerationService implements TokenRingService {
@@ -47,7 +63,7 @@ export default class ImageGenerationService implements TokenRingService {
   }
 
   attach(agent: Agent, creationContext: AgentCreationContext): void {
-    const agentConfig = deepMerge(this.options.agentDefaults, agent.getAgentConfigSlice("imageGeneration", ImageGenerationAgentConfigSchema));
+    const agentConfig = deepClone(this.options.agentDefaults, agent.getAgentConfigSlice("imageGeneration", ImageGenerationAgentConfigSchema));
     const initialState = agent.initializeState(ImageGenerationState, agentConfig);
 
     const selectedModel = initialState.model ?? this.defaultModel;
@@ -200,6 +216,112 @@ export default class ImageGenerationService implements TokenRingService {
       buffer: imageBuffer,
       fileName,
       filePath,
+    };
+  }
+
+  async adjustImage(
+    { source, format, scale, brightness, quality }: AdjustImageOptions,
+    agent: Agent,
+  ): Promise<{
+    mediaType: string;
+    fileName: string;
+    filePath: string;
+    width: number;
+    height: number;
+    buffer: Buffer;
+  }> {
+    const fileSystem = agent.requireServiceByType(FileSystemService);
+
+    if (!source) {
+      throw new Error("Source path is required");
+    }
+
+    const targetDir = this.getOutputDirectory(agent);
+    const sourcePath = source.includes("/") ? source : `${targetDir}/${source}`;
+
+    agent.infoMessage(`[${this.name}] Adjusting image: ${sourcePath}`);
+
+    const sourceBuffer = await fileSystem.readFile(sourcePath, agent);
+    if (!sourceBuffer) {
+      throw new Error(`Failed to read source image: ${sourcePath}`);
+    }
+
+    const sourceBytes = new Uint8Array(sourceBuffer.buffer, sourceBuffer.byteOffset, sourceBuffer.byteLength);
+    const sourceMetadata = await new Bun.Image(sourceBytes).metadata();
+
+    let pipeline = new Bun.Image(sourceBytes);
+    let width = sourceMetadata.width;
+    let height = sourceMetadata.height;
+
+    if (scale !== undefined && scale !== 1) {
+      if (scale <= 0) throw new Error("Scale must be greater than 0");
+      width = Math.max(1, Math.round(sourceMetadata.width * scale));
+      height = Math.max(1, Math.round(sourceMetadata.height * scale));
+      pipeline = pipeline.resize(width, height);
+    }
+
+    if (brightness !== undefined && brightness !== 1) {
+      pipeline = pipeline.modulate({ brightness });
+    }
+
+    const outputFormat: AdjustImageFormat = format ?? (sourceMetadata.format as AdjustImageFormat) ?? "jpeg";
+    const formatInfo = FORMAT_INFO[outputFormat];
+    if (!formatInfo) {
+      throw new Error(`Unsupported output format: ${outputFormat}`);
+    }
+
+    let encoded;
+    switch (outputFormat) {
+      case "jpeg":
+        encoded = quality !== undefined ? pipeline.jpeg({ quality }) : pipeline.jpeg();
+        break;
+      case "webp":
+        encoded = quality !== undefined ? pipeline.webp({ quality }) : pipeline.webp();
+        break;
+      case "png":
+        encoded = pipeline.png();
+        break;
+      default:
+        // noinspection UnnecessaryLocalVariableJS
+        const unsupportedFormat: never = outputFormat;
+        throw new Error(`Unsupported output format: ${unsupportedFormat as string}`);
+    }
+
+    const bytes = await encoded.bytes();
+    const outputBuffer = Buffer.from(bytes);
+
+    const fileName = `${generateHumanId()}.${formatInfo.extension}`;
+    const filePath = `${targetDir}/${fileName}`;
+
+    await fileSystem.writeFile(filePath, outputBuffer, agent);
+
+    let keywords: string[] = [];
+    try {
+      const sourceExif = await exiftool.read(sourcePath);
+      if (Array.isArray(sourceExif.Keywords)) {
+        keywords = sourceExif.Keywords;
+      }
+      const exifData: any = {};
+      if (keywords.length > 0) exifData.Keywords = keywords;
+      if (sourceExif.ImageDescription) exifData.ImageDescription = sourceExif.ImageDescription;
+      if (Object.keys(exifData).length > 0) {
+        await exiftool.write(filePath, exifData);
+      }
+    } catch (error: unknown) {
+      agent.warningMessage(`[${this.name}] Failed to copy EXIF data:`, error as Error);
+    }
+
+    await this.addToIndex(targetDir, fileName, formatInfo.mediaType, width, height, keywords, agent);
+
+    agent.infoMessage(`[${this.name}] Adjusted image saved: ${filePath}`);
+
+    return {
+      mediaType: formatInfo.mediaType,
+      buffer: outputBuffer,
+      fileName,
+      filePath,
+      width,
+      height,
     };
   }
 }
